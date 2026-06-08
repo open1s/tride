@@ -1,0 +1,85 @@
+{
+  "nameShort": "Trinno",
+  "nameLong": "Trinno Research IDE",
+  "applicationName": "trinno",
+  "dataFolderName": ".trinno",
+  "sharedDataFolderName": ".trinno-shared",
+  "win32MutexName": "trinno",
+  "serverApplicationName": "trinno-server",
+  "serverDataFolderName": ".trinno-server",
+  "tunnelApplicationName": "trinno-tunnel",
+  "win32DirName": "open1s Trinno",
+  "win32NameVersion": "open1s Trinno",
+  "win32RegValueName": "Trinno",
+  "win32x64AppId": "{{3bc5c021-d261-48b7-819b-8732a9458a8e}",
+  "win32arm64AppId": "{{051b5e01-0a1c-4ef8-9053-1bbeffc2be3e}",
+  "win32x64UserAppId": "{{1c01ba05-8568-4ce1-bf46-f773f7dabee7}",
+  "win32arm64UserAppId": "{{21248a62-485e-4f50-a560-0d61276ef650}",
+  "win32AppUserModelId": "open1s.Trinno",
+  "win32ShellNameShort": "Tri&nno",
+  "win32TunnelServiceMutex": "trinno-tunnelservice",
+  "win32TunnelMutex": "trinno-tunnel",
+  "darwinBundleIdentifier": "com.open1s.trinno",
+  "darwinProfileUUID": "542efb53-6915-4aaa-b79d-403523f77922",
+  "darwinProfilePayloadUUID": "fc5fcf43-9424-42b3-b779-9b01552b5e05",
+  "linuxIconName": "trinno",
+  "licenseUrl": "https://github.com/open1s/tride/blob/main/LICENSE.txt",
+  "serverLicenseUrl": "https://github.com/open1s/tride/blob/main/LICENSE.txt",
+  "reportIssueUrl": "https://github.com/open1s/tride/issues/new",
+  "urlProtocol": "trinno",
+  "webviewContentExternalBaseUrlTemplate": "",
+  "defaultChatAgent": {
+    "extensionId": "open1s.trinno-research",
+    "chatExtensionId": "open1s.trinno-research",
+    "documentationUrl": "https://github.com/open1s/trinno",
+    "termsStatementUrl": "",
+    "privacyStatementUrl": "",
+    "signUpUrl": ""
+  },
+  "trustedExtensionAuthAccess": {},
+  "onboardingKeymaps": [
+    {
+      "id": "vscode",
+      "label": "VS Code",
+      "description": "Default keyboard mapping"
+    },
+    {
+      "id": "vim",
+      "label": "Vim",
+      "extensionId": "vscodevim.vim",
+      "description": "Vim modal editing"
+    }
+  ],
+  "onboardingThemes": [
+    {
+      "id": "dark-classic",
+      "label": "Dark Classic",
+      "themeId": "Dark+",
+      "type": "dark"
+    },
+    {
+      "id": "light-classic",
+      "label": "Light Classic",
+      "themeId": "Light+",
+      "type": "light"
+    }
+  ],
+  "builtInExtensionsEnabledWithAutoUpdates": [],
+  "sessionsWindowAllowedExtensions": [],
+  "extensionEnabledApiProposals": {
+    "open1s.trinno-research": [
+      "chatParticipantAdditions",
+      "chatProvider",
+      "interactive",
+      "terminalDataWriteEvent",
+      "terminalExecuteCommandEvent",
+      "mcpServerDefinitions",
+      "languageModelSystem",
+      "languageModelToolSupportsModel",
+      "languageModelThinkingPart"
+    ]
+  },
+  "extensionsEnabledWithApiProposalVersion": [
+    "open1s.trinno-research"
+  ]
+}
