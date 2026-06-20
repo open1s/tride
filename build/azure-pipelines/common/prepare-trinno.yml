@@ -1,0 +1,114 @@
+# Trinno Research IDE preparation step
+# Runs after distro mixin, before built-in extensions install.
+# - Builds the trinno-research extension VSIX from source
+# - Downloads Tinymist Typst extension VSIX
+# - Patches product.json with new extensions and branding
+#
+# Parameters:
+#   VSCODE_ARCH: the target architecture (x64, arm64, armhf)
+
+parameters:
+- name: VSCODE_ARCH
+  type: string
+  default: x64
+- name: SKIP_TRINNO_BUILD
+  type: boolean
+  default: false
+
+steps:
+- ${{ if eq(parameters.SKIP_TRINNO_BUILD, false) }}:
+  - script: |
+      set -e
+      echo "=== Preparing Trinno IDE extensions ==="
+
+      # Build trinno-research extension
+      TRINNO_PATH="${TRINNO_PATH:-../../trinno}"
+      BUILTIN_EXT_DIR="build/extensions"
+      mkdir -p "$BUILTIN_EXT_DIR"
+
+      if [ -d "$TRINNO_PATH" ]; then
+        echo "Building trinno-research from $TRINNO_PATH..."
+        (cd "$TRINNO_PATH" && npm run compile)
+
+        STAGING_DIR=".build/trinno-research"
+        rm -rf "$STAGING_DIR"
+        mkdir -p "$STAGING_DIR"
+        cp -r "$TRINNO_PATH/dist" "$STAGING_DIR/dist"
+        cp "$TRINNO_PATH/package.json" "$STAGING_DIR/"
+        [ -f "$TRINNO_PATH/README.md" ] && cp "$TRINNO_PATH/README.md" "$STAGING_DIR/"
+
+        # Copy production node_modules
+        echo "Copying production dependencies..."
+        mkdir -p "$STAGING_DIR/node_modules"
+        PROD_DEPS=$(jq -r '.dependencies // {} | keys[]' "$TRINNO_PATH/package.json" 2>/dev/null || echo "")
+        for dep in $PROD_DEPS; do
+          if [ -d "$TRINNO_PATH/node_modules/$dep" ]; then
+            cp -R "$TRINNO_PATH/node_modules/$dep" "$STAGING_DIR/node_modules/" 2>/dev/null || true
+          fi
+        done
+        [ -d "$TRINNO_PATH/node_modules/.bin" ] && cp -R "$TRINNO_PATH/node_modules/.bin" "$STAGING_DIR/node_modules/" 2>/dev/null || true
+
+        # Create VSIX (zip-based, no vsce dependency on CI)
+        VSIX_PATH="$BUILTIN_EXT_DIR/trinno-research.vsix"
+        rm -f "$VSIX_PATH"
+        (cd "$STAGING_DIR" && zip -qr "../../$VSIX_PATH" . -x "*.map" "*.ts" "*.tsbuildinfo" ".bin/*")
+
+        TRINNO_SHA256=$(shasum -a 256 "$VSIX_PATH" | cut -d' ' -f1)
+        TRINNO_VERSION=$(jq -r '.version' "$TRINNO_PATH/package.json")
+        echo "trinno-research@$TRINNO_VERSION VSIX ready (SHA256: ${TRINNO_SHA256:0:16}...)"
+      else
+        echo "Warning: trinno path $TRINNO_PATH not found, skipping trinno-research build"
+      fi
+
+      # Download Tinymist Typst extension
+      TINYMIST_VERSION="0.15.0"
+      TINYMIST_VSIX="$BUILTIN_EXT_DIR/tinymist-universal.vsix"
+      if [ ! -f "$TINYMIST_VSIX" ]; then
+        echo "Downloading Tinymist Typst v$TINYMIST_VERSION..."
+        curl -sL --max-time 60 --connect-timeout 15 --retry 3 -o "$TINYMIST_VSIX" \
+          "https://github.com/Myriad-Dreamin/tinymist/releases/download/v${TINYMIST_VERSION}/tinymist-universal.vsix" \
+          || echo "Warning: Tinymist download failed (network may be unavailable)"
+      fi
+
+      # Inject extensions into product.json builtInExtensions
+      echo "Updating product.json built-in extensions..."
+      cp product.json product.json.pre-trinno
+
+      # Apply branding overlay (deep-merge defaultChatAgent)
+      jq -s '
+        (.[0] * .[1]) as $merged |
+        (.[0].defaultChatAgent // {}) as $upstream |
+        (.[1].defaultChatAgent // null) as $overlay |
+        if $overlay then
+          $merged | .defaultChatAgent = ($upstream * $overlay)
+        else
+          $merged
+        end
+      ' product.json build/trinno-product-overlay.json > product.json.tmp
+      mv product.json.tmp product.json
+
+      # Build jq additions for extensions that were successfully created
+      JQ_FILTER_PARTS=""
+      JQ_ARGS=""
+
+      if [ -f "build/extensions/trinno-research.vsix" ]; then
+        TRINNO_SHA256=$(shasum -a 256 "build/extensions/trinno-research.vsix" | cut -d' ' -f1)
+        TRINNO_VERSION=$(jq -r '.version' "build/extensions/../trinno/package.json" 2>/dev/null || echo "1.2.1")
+        JQ_FILTER_PARTS="$JQ_FILTER_PARTS \$trinno"
+        JQ_ARGS="$JQ_ARGS --argjson trinno '{\"name\":\"open1s.trinno-research\",\"version\":\"$TRINNO_VERSION\",\"sha256\":\"$TRINNO_SHA256\",\"vsix\":\"build/extensions/trinno-research.vsix\",\"repo\":\"https://github.com/open1s/trinno\",\"metadata\":{\"id\":\"open1s.trinno-research\",\"publisherId\":{\"publisherId\":\"open1s\",\"publisherName\":\"Open1s\",\"displayName\":\"Open1s\",\"flags\":\"verified\"},\"publisherDisplayName\":\"Open1s\"}}'"
+      fi
+
+      if [ -f "build/extensions/tinymist-universal.vsix" ]; then
+        TINYMIST_SHA256=$(shasum -a 256 "build/extensions/tinymist-universal.vsix" | cut -d' ' -f1)
+        JQ_FILTER_PARTS="$JQ_FILTER_PARTS \$tinymist"
+        JQ_ARGS="$JQ_ARGS --argjson tinymist '{\"name\":\"myriad-dreamin.tinymist\",\"version\":\"0.15.0\",\"sha256\":\"$TINYMIST_SHA256\",\"vsix\":\"build/extensions/tinymist-universal.vsix\",\"repo\":\"https://github.com/Myriad-Dreamin/tinymist\",\"platforms\":[\"darwin\",\"linux\",\"win32\"],\"metadata\":{\"id\":\"myriad-dreamin.tinymist\",\"publisherId\":{\"publisherId\":\"myriad-dreamin\",\"publisherName\":\"Myriad Dreamin\",\"displayName\":\"Myriad Dreamin\",\"flags\":\"verified\"},\"publisherDisplayName\":\"Myriad Dreamin\"}}'"
+      fi
+
+      if [ -n "$JQ_FILTER_PARTS" ]; then
+        eval "jq $JQ_ARGS \".builtInExtensions += [${JQ_FILTER_PARTS}]\" product.json > product.json.tmp" && mv product.json.tmp product.json
+      fi
+
+      echo "Trinno IDE extensions prepared"
+    displayName: Prepare Trinno IDE extensions
+    env:
+      TRINNO_PATH: $(TRINNO_PATH)

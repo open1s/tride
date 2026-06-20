@@ -65,7 +65,9 @@
     }
   ],
   "builtInExtensionsEnabledWithAutoUpdates": [],
-  "sessionsWindowAllowedExtensions": [],
+  "sessionsWindowAllowedExtensions": [
+    "open1s.trinno-research"
+  ],
   "extensionEnabledApiProposals": {
     "open1s.trinno-research": [
       "chatParticipantAdditions",

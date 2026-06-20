@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Trinno Research IDE logo
+
+  Design:
+  - Stylized "T" letterform with a hollow counter
+  - Triangle accent (TRIZ contradiction mark)
+  - Deep marine -> cyan gradient (research / discovery)
+  - Monochrome-friendly variant for small/dense contexts
+  - Designed to render crisply at 16px and up
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Trinno Research IDE">
+  <title>Trinno</title>
+  <defs>
+    <linearGradient id="trinno-fill" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%"  stop-color="#0B3D91"/>
+      <stop offset="55%" stop-color="#1E6FD9"/>
+      <stop offset="100%" stop-color="#22D3EE"/>
+    </linearGradient>
+    <linearGradient id="trinno-accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%"  stop-color="#22D3EE"/>
+      <stop offset="100%" stop-color="#7C3AED"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded square background -->
+  <rect x="8" y="8" width="240" height="240" rx="48" ry="48" fill="url(#trinno-fill)"/>
+
+  <!-- Subtle inner highlight -->
+  <rect x="8" y="8" width="240" height="240" rx="48" ry="48" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="2"/>
+
+  <!-- Letterform: T with hollow counter -->
+  <!-- Top bar -->
+  <rect x="56" y="64" width="144" height="28" rx="6" fill="#FFFFFF"/>
+  <!-- Vertical stem -->
+  <rect x="114" y="64" width="28" height="132" rx="6" fill="#FFFFFF"/>
+
+  <!-- TRIZ contradiction triangle accent (top-right) -->
+  <polygon points="200,64 224,64 224,88" fill="url(#trinno-accent)"/>
+
+  <!-- Subtle base dot row (steps / iteration, optional) -->
+  <circle cx="128" cy="216" r="6" fill="rgba(255,255,255,0.65)"/>
+  <circle cx="100" cy="216" r="4" fill="rgba(255,255,255,0.4)"/>
+  <circle cx="156" cy="216" r="4" fill="rgba(255,255,255,0.4)"/>
+</svg>
