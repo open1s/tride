@@ -83,23 +83,6 @@
         },
         "publisherDisplayName": "Microsoft"
       }
-    },
-    {
-      "name": "open1s.trinno-research",
-      "version": "1.2.1",
-      "sha256": "d01aaf8655024e0ff14dd684f8e64ff7059c51b5abc607170f7a2b7d7b59023a",
-      "vsix": "build/extensions/trinno-research.vsix",
-      "repo": "https://github.com/open1s/trinno",
-      "metadata": {
-        "id": "open1s.trinno-research",
-        "publisherId": {
-          "publisherId": "open1s",
-          "publisherName": "Open1s",
-          "displayName": "Open1s",
-          "flags": "verified"
-        },
-        "publisherDisplayName": "Open1s"
-      }
     }
   ],
   "defaultChatAgent": {

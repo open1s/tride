@@ -122,72 +122,61 @@ echo "[4/8] Updating product.json built-in extensions..."
 
 # Build jq filter: add tinymist if available, add trinno if built
 JQ_ADDITIONS="[]"
-if [ -n "$TRINNO_VERSION" ]; then
-  JQ_ADDITIONS="[\$trinno]"
-fi
+# Build the jq invocation to add both tinymist and trinno to builtInExtensions
+# We accumulate a list of argjson entries and the filter references them.
+JQ_ARGS=""
+JQ_REF_PARTS=""
+
+# Add tinymist argjson (always preferred if downloaded)
 if [ -n "$TINYMIST_SHA256" ]; then
-  JQ_ADDITIONS="$(echo "$JQ_ADDITIONS" | jq -c ". + [\$tinymist]")"
+  TINYMIST_ENTRY=$(jq -c -n --arg sha "$TINYMIST_SHA256" --arg vsix "$TINYMIST_VSIX" --arg ver "$TINYMIST_VERSION" '{
+    name: "myriad-dreamin.tinymist",
+    version: $ver,
+    sha256: $sha,
+    vsix: $vsix,
+    repo: "https://github.com/Myriad-Dreamin/tinymist",
+    platforms: ["darwin", "linux", "win32"],
+    metadata: {
+      id: "myriad-dreamin.tinymist",
+      publisherId: { publisherId: "myriad-dreamin", publisherName: "Myriad Dreamin", displayName: "Myriad Dreamin", flags: "verified" },
+      publisherDisplayName: "Myriad Dreamin"
+    }
+  }')
+  JQ_ARGS="$JQ_ARGS --argjson tinymist $TINYMIST_ENTRY"
+  JQ_REF_PARTS="$JQ_REF_PARTS \$tinymist"
 fi
 
-# Build the jq command
-JQ_CMD="jq"
-
-# Add trinno argjson if available
+# Add trinno argjson if built
 if [ -n "$TRINNO_VERSION" ]; then
-  JQ_CMD="$JQ_CMD --argjson trinno '$(cat <<EOJSON
-  {
-    "name": "open1s.trinno-research",
-    "version": "$TRINNO_VERSION",
-    "sha256": "$TRINNO_SHA256",
-    "vsix": "$BUILTIN_EXT_DIR/trinno-research.vsix",
-    "repo": "https://github.com/open1s/trinno",
-    "metadata": {
-      "id": "open1s.trinno-research",
-      "publisherId": {
-        "publisherId": "open1s",
-        "publisherName": "Open1s",
-        "displayName": "Open1s",
-        "flags": "verified"
-      },
-      "publisherDisplayName": "Open1s"
+  TRINNO_ENTRY=$(jq -c -n --arg sha "$TRINNO_SHA256" --arg ver "$TRINNO_VERSION" --arg vsix "$BUILTIN_EXT_DIR/trinno-research.vsix" '{
+    name: "open1s.trinno-research",
+    version: $ver,
+    sha256: $sha,
+    vsix: $vsix,
+    repo: "https://github.com/open1s/trinno",
+    metadata: {
+      id: "open1s.trinno-research",
+      publisherId: { publisherId: "open1s", publisherName: "Open1s", displayName: "Open1s", flags: "verified" },
+      publisherDisplayName: "Open1s"
     }
-  }
-EOJSON
-)'"
+  }')
+  JQ_ARGS="$JQ_ARGS --argjson trinno $TRINNO_ENTRY"
+  JQ_REF_PARTS="$JQ_REF_PARTS \$trinno"
 fi
 
-# Add tinymist argjson if available
-if [ -n "$TINYMIST_SHA256" ]; then
-  JQ_CMD="$JQ_CMD --argjson tinymist '$(cat <<EOJSON
-  {
-    "name": "myriad-dreamin.tinymist",
-    "version": "$TINYMIST_VERSION",
-    "sha256": "$TINYMIST_SHA256",
-    "vsix": "$TINYMIST_VSIX",
-    "repo": "https://github.com/Myriad-Dreamin/tinymist",
-    "platforms": ["darwin", "linux", "win32"],
-    "metadata": {
-      "id": "myriad-dreamin.tinymist",
-      "publisherId": {
-        "publisherId": "myriad-dreamin",
-        "publisherName": "Myriad Dreamin",
-        "displayName": "Myriad Dreamin",
-        "flags": "verified"
-      },
-      "publisherDisplayName": "Myriad Dreamin"
-    }
-  }
-EOJSON
-)'"
+if [ -n "$JQ_REF_PARTS" ]; then
+  JQ_REF_PARTS="${JQ_REF_PARTS# }"  # strip leading space
+  # Use base64 to safely pass the JSON values to jq, avoiding any shell expansion.
+  if [ -n "$TRINNO_VERSION" ] && [ -n "$TINYMIST_SHA256" ]; then
+    printf '{"trinno":%s,"tinymist":%s}' "$TRINNO_ENTRY" "$TINYMIST_ENTRY" > /tmp/.trinno-exts.json
+    jq --slurpfile exts /tmp/.trinno-exts.json '.builtInExtensions += [$exts[0].trinno, $exts[0].tinymist]' product.json > product.json.tmp && mv product.json.tmp product.json || true
+    rm -f /tmp/.trinno-exts.json
+  elif [ -n "$TRINNO_VERSION" ]; then
+    jq --argjson trinno "$TRINNO_ENTRY" '.builtInExtensions += [$trinno]' product.json > product.json.tmp && mv product.json.tmp product.json || true
+  elif [ -n "$TINYMIST_SHA256" ]; then
+    jq --argjson tinymist "$TINYMIST_ENTRY" '.builtInExtensions += [$tinymist]' product.json > product.json.tmp && mv product.json.tmp product.json || true
+  fi
 fi
-
-# -------------------------------------------------
-# 4. Inject extensions into product.json builtInExtensions
-# -------------------------------------------------
-echo "[4/8] Updating product.json built-in extensions..."
-
-JQ_FILTER=".builtInExtensions += $JQ_ADDITIONS"
-eval "$JQ_CMD '$JQ_FILTER' product.json > product.json.tmp" && mv product.json.tmp product.json
 
 # -------------------------------------------------
 # 5. Add TRIZ workspace template to build output
