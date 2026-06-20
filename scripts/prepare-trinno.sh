@@ -193,43 +193,43 @@ cp package.json{,.bak}
 TRINNO_IDE_VERSION="${TRINNO_IDE_VERSION:-1.0.0}"
 jq --arg v "$TRINNO_IDE_VERSION" '.version = $v' package.json > package.json.tmp
 mv package.json.tmp package.json
-sed -i '' 's/Microsoft Corporation/open1s/g' package.json
+sed -i.bak 's/Microsoft Corporation/open1s/g' package.json && rm -f package.json.bak
 
 # -------------------------------------------------
 # 7. Update electron build config
 # -------------------------------------------------
 echo "[7/8] Patching build/electron config..."
-sed -i '' 's/Microsoft Corporation/open1s/g' build/lib/electron.ts
+sed -i.bak 's/Microsoft Corporation/open1s/g' build/lib/electron.ts && rm -f build/lib/electron.ts.bak
 
 # -------------------------------------------------
 # 8. Update Linux packaging metadata
 # -------------------------------------------------
 echo "[8/8] Patching Linux packaging templates..."
 
-[ -f resources/linux/code.appdata.xml ] && sed -i '' \
+[ -f resources/linux/code.appdata.xml ] && sed -i.bak \
   -e 's|Visual Studio Code|Trinno IDE|g' \
   -e 's|https://code.visualstudio.com|https://github.com/open1s/tride|g' \
   -e 's|https://code.visualstudio.com/docs/setup/linux|https://github.com/open1s/tride|g' \
   -e 's|https://code.visualstudio.com/home/home-screenshot-linux-lg.png||g' \
-  resources/linux/code.appdata.xml
+  resources/linux/code.appdata.xml && rm -f resources/linux/code.appdata.xml.bak
 
-[ -f resources/linux/debian/control.template ] && sed -i '' \
+[ -f resources/linux/debian/control.template ] && sed -i.bak \
   -e 's|Microsoft Corporation <vscode-linux@microsoft.com>|open1s <hello@open1s.org>|g' \
   -e 's|Visual Studio Code|Trinno IDE|g' \
   -e 's|https://code.visualstudio.com|https://github.com/open1s/tride|g' \
-  resources/linux/debian/control.template
+  resources/linux/debian/control.template && rm -f resources/linux/debian/control.template.bak
 
-[ -f resources/linux/rpm/code.spec.template ] && sed -i '' \
+[ -f resources/linux/rpm/code.spec.template ] && sed -i.bak \
   -e 's|Microsoft Corporation|open1s|g' \
   -e 's|Visual Studio Code Team <vscode-linux@microsoft.com>|open1s <hello@open1s.org>|g' \
   -e 's|Visual Studio Code|Trinno IDE|g' \
   -e 's|https://code.visualstudio.com|https://github.com/open1s/tride|g' \
-  resources/linux/rpm/code.spec.template
+  resources/linux/rpm/code.spec.template && rm -f resources/linux/rpm/code.spec.template.bak
 
-[ -f build/win32/code.iss ] && sed -i '' \
+[ -f build/win32/code.iss ] && sed -i.bak \
   -e 's|https://code.visualstudio.com|https://github.com/open1s/tride|g' \
   -e 's|Microsoft Corporation|open1s|g' \
-  build/win32/code.iss
+  build/win32/code.iss && rm -f build/win32/code.iss.bak
 
 # Disable telemetry
 jq '.enableTelemetry = false' product.json > product.json.tmp && mv product.json.tmp product.json
