@@ -201,7 +201,8 @@ cp -r "build/config/triz-workspace/." ".build/triz-workspace-template/"
 # -------------------------------------------------
 echo "[6/8] Patching package.json..."
 cp package.json{,.bak}
-jq '.version = "0.1.0"' package.json > package.json.tmp
+TRINNO_IDE_VERSION="${TRINNO_IDE_VERSION:-1.0.0}"
+jq --arg v "$TRINNO_IDE_VERSION" '.version = $v' package.json > package.json.tmp
 mv package.json.tmp package.json
 sed -i '' 's/Microsoft Corporation/open1s/g' package.json
 

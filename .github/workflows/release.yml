@@ -1,0 +1,191 @@
+# Trinno IDE Release
+#
+# Trigger a tagged release on GitHub.
+#
+# Examples:
+#   gh workflow run release.yml -f version=1.0.0
+#   gh workflow run release.yml -f version=1.0.0 -f draft=false
+#   git tag v1.0.0 && git push origin v1.0.0   # auto-triggered on tag push
+#
+# What this does:
+#   1. Compiles the trinno-research extension from a sibling checkout
+#   2. Runs prepare-trinno.sh to build branding + extension VSIX
+#   3. Optionally downloads Tinymist Typst extension
+#   4. Bumps package.json / product.json to <version>
+#   5. Creates a GitHub Release tagged v<version> with the assets attached
+
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g. 1.0.0)'
+        required: true
+        default: '1.0.0'
+      draft:
+        description: 'Create as draft release'
+        type: boolean
+        default: false
+      prerelease:
+        description: 'Mark as pre-release'
+        type: boolean
+        default: false
+      skip_trinno_build:
+        description: 'Skip trinno-research extension build'
+        type: boolean
+        default: false
+  push:
+    tags:
+      - 'v*.*.*'
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      VERSION: ${{ github.event.inputs.version || github.ref_name }}
+      TAG_NAME: v${{ github.event.inputs.version || github.ref_name }}
+    steps:
+      - name: Checkout tride
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.x'
+
+      - name: Install system tools (rsvg, libzip, jq, imagemagick)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y librsvg2-bin imagemagick zip unzip jq
+
+      # ----- trinno-research extension source -----
+      - name: Locate trinno-research checkout
+        id: trinno
+        env:
+          TRINNO_PATH: ${{ github.workspace }}/../trinno
+        run: |
+          if [ -d "${TRINNO_PATH}" ]; then
+            echo "path=${TRINNO_PATH}" >> "$GITHUB_OUTPUT"
+            echo "Found trinno at ${TRINNO_PATH}" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Trinno not found locally; cloning..."
+            cd ..
+            git clone --depth 1 https://github.com/open1s/trinno.git trinno
+            echo "path=$(pwd)/trinno" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build trinno-research
+        if: ${{ inputs.skip_trinno_build != true }}
+        working-directory: ${{ steps.trinno.outputs.path }}
+        run: |
+          npm ci || npm install
+          npm run compile
+
+      # ----- branding + extension bundling -----
+      - name: Run prepare-trinno.sh
+        env:
+          TRINNO_PATH: ${{ steps.trinno.outputs.path }}
+          SKIP_PREPARE_BRANDING: 'false'
+        run: bash scripts/prepare-trinno.sh
+
+      # ----- version bump -----
+      - name: Bump versions
+        run: |
+          VERSION="${VERSION#v}"
+          echo "Bumping to version ${VERSION}"
+          jq --arg v "${VERSION}" '.version = $v' package.json > package.json.tmp
+          mv package.json.tmp package.json
+
+          if [ -f product.json ]; then
+            (jq --arg v "${VERSION}" 'has("version") | if . then .version = $v else . end' product.json > product.json.tmp) && mv product.json.tmp product.json || true
+          fi
+
+      # ----- collect assets -----
+      - name: Collect release assets
+        run: |
+          mkdir -p .release/assets
+          [ -f build/extensions/trinno-research.vsix ]    && cp build/extensions/trinno-research.vsix    .release/assets/ || echo "skip trinno-research.vsix"
+          [ -f build/extensions/tinymist-universal.vsix ] && cp build/extensions/tinymist-universal.vsix .release/assets/ || echo "skip tinymist-universal.vsix"
+          cp build/branding/trinno-logo-256.png .release/assets/trinno-icon-256.png
+          cp package.json .release/
+          cp product.json .release/
+          echo "VERSION=${VERSION#v}" > .release/version
+          ls -la .release/ .release/assets/
+
+      # ----- changelog generation -----
+      - name: Generate release notes
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 "${TAG_NAME}^" 2>/dev/null || echo "")
+          {
+            echo "## Trinno Research IDE ${VERSION#v}"
+            echo ""
+            echo "Pre-built distributions and bundled extensions for the Trinno Research IDE."
+            echo ""
+            echo "### Bundled extensions"
+            echo ""
+            echo "- **open1s.trinno-research** \u2014 TRIZ research assistant (chat panel, contradiction analysis, paper download, BOS agent)"
+            echo "- **myriad-dreamin.tinymist** \u2014 Typst language service (preview, formatting, LSP)"
+            echo "- **vscode.mermaid-markdown-features** \u2014 Mermaid diagram rendering in markdown preview"
+            echo ""
+            echo "### Assets"
+            echo ""
+            echo "| File | Description |"
+            echo "|------|-------------|"
+            echo "| \`trinno-research.vsix\` | Trinno Research extension VSIX |"
+            echo "| \`tinymist-universal.vsix\` | Tinymist Typst extension VSIX |"
+            echo "| \`trinno-icon-256.png\` | Brand icon (256x256) |"
+            echo ""
+            if [ -n "${PREV_TAG}" ]; then
+              echo "### Changelog"
+              echo ""
+              echo "_Commits since \`${PREV_TAG}\`:_"
+              echo ""
+              echo '```'
+              git log --pretty=format:"- %h %s" "${PREV_TAG}..HEAD" -- ':!.build' | head -50
+              echo ""
+              echo '```'
+            fi
+          } > .release/NOTES.md
+          cat .release/NOTES.md
+
+      # ----- tag check / creation -----
+      - name: Ensure tag exists
+        run: |
+          if ! git rev-parse "${TAG_NAME}" >/dev/null 2>&1; then
+            echo "Creating tag ${TAG_NAME}"
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git tag -a "${TAG_NAME}" -m "Trinno Research IDE ${VERSION#v}"
+            git push origin "${TAG_NAME}" || echo "Tag push failed (may already exist)"
+          else
+            echo "Tag ${TAG_NAME} already exists"
+          fi
+
+      # ----- create release -----
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG_NAME }}
+          name: 'Trinno Research IDE ${{ env.VERSION }}'
+          body_path: .release/NOTES.md
+          draft: ${{ inputs.draft || false }}
+          prerelease: ${{ inputs.prerelease || false }}
+          files: |
+            .release/assets/trinno-research.vsix
+            .release/assets/tinymist-universal.vsix
+            .release/assets/trinno-icon-256.png
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
