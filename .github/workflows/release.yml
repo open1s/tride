@@ -137,7 +137,6 @@ jobs:
             echo "| \`trinno-research.vsix\` | Trinno Research extension VSIX |"
             echo "| \`tinymist-universal.vsix\` | Tinymist Typst extension VSIX |"
             printf '%s\n' "| \`trinno-icon-256.png\` | Brand icon (256x256) |"
-            printf '%s\n' "| \`tride-linux-x64.tar.gz\` | Tride IDE for Linux x64 (unsigned) |"
             echo ""
             if [ -n "${PREV_TAG}" ]; then
               echo "### Changelog"
@@ -178,79 +177,6 @@ jobs:
             .release/assets/trinno-research.vsix
             .release/assets/tinymist-universal.vsix
             .release/assets/trinno-icon-256.png
-            .release/assets/tride-linux-x64.tar.gz
           fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  build-linux-x64:
-    runs-on: ubuntu-22.04
-    timeout-minutes: 90
-    steps:
-      - name: Checkout tride
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-          ref: ${{ github.event.inputs.version && format('refs/tags/v{0}', github.event.inputs.version) || github.ref }}
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '24.x'
-
-      - name: Cache node_modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            node_modules
-            build/node_modules
-          key: ${{ runner.os }}-nm-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-nm-
-
-      - name: Install Linux build deps
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            pkg-config xvfb libgtk-3-0 libxkbfile-dev libkrb5-dev libgbm1 \
-            rpm bubblewrap socat fakeroot dpkg-dev
-
-      - name: Install npm deps
-        run: |
-          npm ci || npm install
-
-      - name: Build Tride Linux x64
-        env:
-          VSCODE_QUALITY: 'oss'
-          VSCODE_BUILD_LINUX_SNAP: 'false'
-        run: |
-          set -e
-          yarn run gulp vscode-linux-x64-min || yarn run gulp vscode-linux-x64
-          ls -la .build/linux 2>/dev/null || true
-          find .build -maxdepth 3 -iname '*linux*' -o -iname 'VSCode*' | head -30
-
-      - name: Package tride-linux-x64.tar.gz
-        run: |
-          set -e
-          mkdir -p .release_linux/assets
-          UNSIGNED=$(find .build/linux -maxdepth 2 -type d -name 'VSCode-linux-x64' | head -1)
-          if [ -z "$UNSIGNED" ]; then
-            UNSIGNED=$(find .build -maxdepth 4 -type d -name 'VSCode-linux-x64' | head -1)
-          fi
-          if [ -z "$UNSIGNED" ]; then
-            echo "::error::VSCode-linux-x64 build output not found under .build/"
-            find .build -maxdepth 4 -type d | head -50
-            exit 1
-          fi
-          echo "Found build at: $UNSIGNED"
-          cd "$(dirname "$UNSIGNED")"
-          tar -czf "$GITHUB_WORKSPACE/.release_linux/assets/tride-linux-x64.tar.gz" "$(basename "$UNSIGNED")"
-          ls -la "$GITHUB_WORKSPACE/.release_linux/assets/"
-
-      - name: Upload linux-x64 artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: tride-linux-x64
-          path: .release_linux/assets/tride-linux-x64.tar.gz
-          if-no-files-found: error
