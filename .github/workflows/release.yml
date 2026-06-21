@@ -270,14 +270,25 @@ jobs:
 
           python3 -c "import json; p=json.load(open('product.json')); assert isinstance(p, dict) and 'builtInExtensions' in p; print('product.json validated OK')"
 
-      - name: Install dependencies
+      - name: Install dependencies (non-Windows)
+        if: matrix.name != 'win32-x64'
         env:
           npm_config_build_from_source: "false"
           ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
           NODE_OPTIONS: --max-old-space-size=8192
-          vs2022_install: "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise"
         run: npm ci
+
+      - name: Install dependencies (Windows)
+        if: matrix.name == 'win32-x64'
+        env:
+          npm_config_build_from_source: "false"
+          ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+          NODE_OPTIONS: --max-old-space-size=8192
+        run: |
+          npm ci --ignore-scripts
+          node build/npm/postinstall.ts
 
       - name: Compile
         run: npm run gulp core-ci
