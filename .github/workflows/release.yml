@@ -261,8 +261,8 @@ jobs:
 
       - name: Apply Tride branding
         run: |
-          cp .release-artifacts/product.json product.json
-          cp .release-artifacts/package.json package.json
+          cp .release-artifacts/.release/product.json product.json
+          cp .release-artifacts/.release/package.json package.json
           mkdir -p build/extensions
           cp .release-artifacts/build/extensions/*.vsix build/extensions/ 2>/dev/null || true
           bash scripts/install-branding.sh || true
