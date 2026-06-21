@@ -277,6 +277,7 @@ jobs:
           ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
           NODE_OPTIONS: --max-old-space-size=8192
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm ci
 
       - name: Install dependencies (Windows)
@@ -286,6 +287,7 @@ jobs:
           ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
           NODE_OPTIONS: --max-old-space-size=8192
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           npm ci --ignore-scripts
           node build/npm/postinstall.ts
