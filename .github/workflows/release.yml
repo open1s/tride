@@ -36,7 +36,7 @@ jobs:
     timeout-minutes: 60
     env:
       VERSION: ${{ github.event.inputs.version || github.ref_name }}
-      TAG_NAME: v${{ github.event.inputs.version || github.ref_name }}
+      TAG_NAME: ${{ github.event.inputs.version && format('v{0}', github.event.inputs.version) || github.ref_name }}
     steps:
       - name: Checkout tride
         uses: actions/checkout@v4
@@ -236,7 +236,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       VERSION: ${{ github.event.inputs.version || github.ref_name }}
-      TAG_NAME: v${{ github.event.inputs.version || github.ref_name }}
+      TAG_NAME: ${{ github.event.inputs.version && format('v{0}', github.event.inputs.version) || github.ref_name }}
 
     steps:
       - uses: actions/checkout@v4
