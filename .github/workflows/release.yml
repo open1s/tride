@@ -215,18 +215,16 @@ jobs:
           URL="https://github.com/VSCodium/vscodium/releases/download/$TAG/VSCodium-linux-x64-$TAG.tar.gz"
           echo "Downloading $URL"
           curl -fL "$URL" -o vscodium-linux.tar.gz
-          ls -lh vscodium-linux.tar.gz
           tar -xzf vscodium-linux.tar.gz
-          echo "=== Contents after extraction ===" && ls -la
-          DIR=$(find . -maxdepth 1 -mindepth 1 -type d -not -name '.release' -not -name '.release*' -not -name '.release_assets' | head -1)
-          echo "Extracted dir: $DIR"
-          test -n "$DIR"
-          test -f "$DIR/resources/app/product.json"
-          cp .release/product.json "$DIR/resources/app/product.json"
-          mkdir -p "$DIR/resources/app/extensions"
-          cp .release/assets/trinno-research.vsix "$DIR/resources/app/extensions/" 2>/dev/null || true
-          cp .release/assets/tinymist-universal.vsix "$DIR/resources/app/extensions/" 2>/dev/null || true
-          tar -czf .release_assets/tride-linux-x64.tar.gz "$DIR"
+          # VSCodium linux tarball is flat (no top-level dir)
+          mkdir -p tride-linux-x64
+          find . -maxdepth 1 -not -name '.' -not -name '.release' -not -name '.release*' -not -name '.release_assets' -not -name 'tride-linux-x64' -not -name 'vscodium-linux.tar.gz' -exec mv {} tride-linux-x64/ \;
+          test -f tride-linux-x64/resources/app/product.json
+          cp .release/product.json tride-linux-x64/resources/app/product.json
+          mkdir -p tride-linux-x64/resources/app/extensions
+          cp .release/assets/trinno-research.vsix tride-linux-x64/resources/app/extensions/ 2>/dev/null || true
+          cp .release/assets/tinymist-universal.vsix tride-linux-x64/resources/app/extensions/ 2>/dev/null || true
+          tar -czf .release_assets/tride-linux-x64.tar.gz tride-linux-x64/
           ls -lh .release_assets/tride-linux-x64.tar.gz
 
       - name: Bundle macOS x64
@@ -273,9 +271,25 @@ jobs:
           URL="https://github.com/VSCodium/vscodium/releases/download/$TAG/VSCodium-win32-x64-$TAG.zip"
           curl -fL "$URL" -o vscodium-win32-x64.zip
           unzip -q vscodium-win32-x64.zip
-          echo "=== Contents ===" && ls -la
-          DIR=$(find . -maxdepth 1 -mindepth 1 -type d -not -name '.release' -not -name '.release*' -not -name '.release_assets' | head -1)
-          test -n "$DIR"
+          # Check if zip has a top-level directory or is flat
+          if [ -d "VSCodium-win32-x64" ]; then
+            WIN_DIR="VSCodium-win32-x64"
+          elif [ -d "VSCode-win32-x64" ]; then
+            WIN_DIR="VSCode-win32-x64"
+          else
+            # Flat structure; wrap it
+            mkdir -p tride-win32-x64
+            find . -maxdepth 1 -not -name '.' -not -name '.release' -not -name '.release*' -not -name '.release_assets' -not -name 'tride-win32-x64' -not -name 'vscodium-win32-x64.zip' -exec mv {} tride-win32-x64/ \;
+            WIN_DIR="tride-win32-x64"
+          fi
+          echo "Win dir: $WIN_DIR"
+          test -f "$WIN_DIR/resources/app/product.json"
+          cp .release/product.json "$WIN_DIR/resources/app/product.json"
+          mkdir -p "$WIN_DIR/resources/app/extensions"
+          cp .release/assets/trinno-research.vsix "$WIN_DIR/resources/app/extensions/" 2>/dev/null || true
+          cp .release/assets/tinymist-universal.vsix "$WIN_DIR/resources/app/extensions/" 2>/dev/null || true
+          cd "$WIN_DIR" && zip -qr "../.release_assets/tride-win32-x64.zip" . && cd ..
+          ls -lh .release_assets/tride-win32-x64.zip
           test -f "$DIR/resources/app/product.json"
           cp .release/product.json "$DIR/resources/app/product.json"
           mkdir -p "$DIR/resources/app/extensions"
