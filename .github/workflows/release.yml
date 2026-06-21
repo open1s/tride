@@ -32,6 +32,7 @@ permissions:
 
 jobs:
   release:
+    needs: build-linux-x64
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
@@ -43,6 +44,12 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download Linux build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: tride-linux-x64
+          path: .release/assets/
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -177,7 +184,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-linux-x64:
-    needs: release
     runs-on: ubuntu-22.04
     timeout-minutes: 90
     steps:
@@ -242,11 +248,9 @@ jobs:
           tar -czf "$GITHUB_WORKSPACE/.release_linux/assets/tride-linux-x64.tar.gz" "$(basename "$UNSIGNED")"
           ls -la "$GITHUB_WORKSPACE/.release_linux/assets/"
 
-      - name: Upload linux-x64 asset
-        uses: softprops/action-gh-release@v2
+      - name: Upload linux-x64 artifact
+        uses: actions/upload-artifact@v4
         with:
-          tag_name: ${{ github.event.inputs.version && format('v{0}', github.event.inputs.version) || github.ref_name }}
-          files: .release_linux/assets/tride-linux-x64.tar.gz
-          fail_on_unmatched_files: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: tride-linux-x64
+          path: .release_linux/assets/tride-linux-x64.tar.gz
+          if-no-files-found: error
