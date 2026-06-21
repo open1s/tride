@@ -276,10 +276,14 @@ jobs:
           ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
           NODE_OPTIONS: --max-old-space-size=8192
+          vs2022_install: "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise"
         run: npm ci
 
       - name: Compile
         run: npm run gulp core-ci
+
+      - name: Package copilot extension
+        run: npm run gulp compile-copilot-extension-build
 
       - name: Package (${{ matrix.name }})
         run: npm run gulp vscode-${{ matrix.platform }}-${{ matrix.arch }}-min-ci
