@@ -130,6 +130,10 @@ jobs:
             echo "| \`trinno-research.vsix\` | Trinno Research extension VSIX |"
             echo "| \`tinymist-universal.vsix\` | Tinymist Typst extension VSIX |"
             printf '%s\n' "| \`trinno-icon-256.png\` | Brand icon (256x256) |"
+            printf '%s\n' "| \`tride-linux-x64.tar.gz\` | Tride IDE for Linux x64 |"
+            printf '%s\n' "| \`tride-darwin-x64.zip\` | Tride IDE for macOS x64 (Intel) |"
+            printf '%s\n' "| \`tride-darwin-arm64.zip\` | Tride IDE for macOS arm64 (Apple Silicon) |"
+            printf '%s\n' "| \`tride-win32-x64.zip\` | Tride IDE for Windows x64 |"
             echo ""
             if [ -n "${PREV_TAG}" ]; then
               echo "### Changelog"
@@ -170,6 +174,117 @@ jobs:
             .release/assets/trinno-research.vsix
             .release/assets/tinymist-universal.vsix
             .release/assets/trinno-icon-256.png
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload artifacts for bundle job
+        uses: actions/upload-artifact@v4
+        with:
+          name: tride-release-artifacts
+          path: |
+            .release/assets/
+            .release/product.json
+            .release/package.json
+          if-no-files-found: error
+
+  bundle-platforms:
+    needs: release
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    env:
+      VERSION: ${{ github.event.inputs.version || github.ref_name }}
+      TAG_NAME: v${{ github.event.inputs.version || github.ref_name }}
+    steps:
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: tride-release-artifacts
+          path: .release/
+
+      - name: Setup
+        run: |
+          mkdir -p .release_assets
+          echo "VERSION=${VERSION#v}" > .release/.version
+
+      - name: Bundle Linux x64
+        run: |
+          TAG=$(curl -sL https://api.github.com/repos/VSCodium/vscodium/releases/latest | python3 -c "import json,sys; print(json.load(sys.stdin)['tag_name'])")
+          echo "VSCodium tag: $TAG"
+          URL="https://github.com/VSCodium/vscodium/releases/download/$TAG/VSCodium-linux-x64-$TAG.tar.gz"
+          curl -sL "$URL" -o vscodium-linux.tar.gz
+          tar -xzf vscodium-linux.tar.gz
+          DIR=$(find . -maxdepth 1 -type d -name 'VSCodium-linux-*' | head -1)
+          cp .release/product.json "$DIR/resources/app/product.json"
+          mkdir -p "$DIR/resources/app/extensions/trinno-research"
+          unzip -qo .release/assets/trinno-research.vsix -d "$DIR/resources/app/extensions/trinno-research/" 2>/dev/null || true
+          mkdir -p "$DIR/resources/app/extensions/tinymist-universal"
+          unzip -qo .release/assets/tinymist-universal.vsix -d "$DIR/resources/app/extensions/tinymist-universal/" 2>/dev/null || true
+          tar -czf .release_assets/tride-linux-x64.tar.gz "$DIR"
+          ls -lh .release_assets/tride-linux-x64.tar.gz
+
+      - name: Bundle macOS x64
+        run: |
+          TAG=$(curl -sL https://api.github.com/repos/VSCodium/vscodium/releases/latest | python3 -c "import json,sys; print(json.load(sys.stdin)['tag_name'])")
+          URL="https://github.com/VSCodium/vscodium/releases/download/$TAG/VSCodium-darwin-x64-$TAG.zip"
+          curl -sL "$URL" -o vscodium-darwin-x64.zip
+          unzip -q vscodium-darwin-x64.zip
+          # macOS zips create VSCodium.app
+          APP_DIR="VSCodium.app"
+          if [ -d "$APP_DIR" ]; then
+            cp .release/product.json "$APP_DIR/Contents/Resources/app/product.json"
+            mkdir -p "$APP_DIR/Contents/Resources/app/extensions"
+            cp .release/assets/trinno-research.vsix "$APP_DIR/Contents/Resources/app/extensions/trinno-research.vsix" 2>/dev/null || true
+            cp .release/assets/tinymist-universal.vsix "$APP_DIR/Contents/Resources/app/extensions/tinymist-universal.vsix" 2>/dev/null || true
+            zip -qr .release_assets/tride-darwin-x64.zip "$APP_DIR"
+          else
+            echo "VSCodium.app not found"
+            ls -la
+          fi
+          ls -lh .release_assets/tride-darwin-x64.zip 2>/dev/null || true
+
+      - name: Bundle macOS arm64
+        run: |
+          TAG=$(curl -sL https://api.github.com/repos/VSCodium/vscodium/releases/latest | python3 -c "import json,sys; print(json.load(sys.stdin)['tag_name'])")
+          URL="https://github.com/VSCodium/vscodium/releases/download/$TAG/VSCodium-darwin-arm64-$TAG.zip"
+          curl -sL "$URL" -o vscodium-darwin-arm64.zip
+          mkdir -p codium-arm64
+          unzip -q vscodium-darwin-arm64.zip -d codium-arm64
+          APP_DIR="codium-arm64/VSCodium.app"
+          if [ -d "$APP_DIR" ]; then
+            mv "$APP_DIR" "codium-arm64/Tride-arm64.app"
+            APP_DIR="codium-arm64/Tride-arm64.app"
+            cp .release/product.json "$APP_DIR/Contents/Resources/app/product.json"
+            mkdir -p "$APP_DIR/Contents/Resources/app/extensions"
+            cp .release/assets/trinno-research.vsix "$APP_DIR/Contents/Resources/app/extensions/trinno-research.vsix" 2>/dev/null || true
+            cp .release/assets/tinymist-universal.vsix "$APP_DIR/Contents/Resources/app/extensions/tinymist-universal.vsix" 2>/dev/null || true
+            cd codium-arm64 && zip -qr "$GITHUB_WORKSPACE/.release_assets/tride-darwin-arm64.zip" "$(basename "$APP_DIR")" && cd "$GITHUB_WORKSPACE"
+          fi
+          ls -lh .release_assets/tride-darwin-arm64.zip 2>/dev/null || true
+
+      - name: Bundle Windows x64
+        run: |
+          TAG=$(curl -sL https://api.github.com/repos/VSCodium/vscodium/releases/latest | python3 -c "import json,sys; print(json.load(sys.stdin)['tag_name'])")
+          URL="https://github.com/VSCodium/vscodium/releases/download/$TAG/VSCodium-win32-x64-$TAG.zip"
+          curl -sL "$URL" -o vscodium-win32-x64.zip
+          unzip -q vscodium-win32-x64.zip
+          DIR=$(find . -maxdepth 1 -type d -name 'VSCodium-win32-*' | head -1)
+          cp .release/product.json "$DIR/resources/app/product.json"
+          mkdir -p "$DIR/resources/app/extensions"
+          cp .release/assets/trinno-research.vsix "$DIR/resources/app/extensions/trinno-research.vsix" 2>/dev/null || true
+          cp .release/assets/tinymist-universal.vsix "$DIR/resources/app/extensions/tinymist-universal.vsix" 2>/dev/null || true
+          zip -qr .release_assets/tride-win32-x64.zip "$DIR"
+          ls -lh .release_assets/tride-win32-x64.zip
+
+      - name: Upload platform assets to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG_NAME }}
+          files: |
+            .release_assets/tride-linux-x64.tar.gz
+            .release_assets/tride-darwin-x64.zip
+            .release_assets/tride-darwin-arm64.zip
+            .release_assets/tride-win32-x64.zip
           fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
