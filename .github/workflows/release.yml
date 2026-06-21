@@ -209,12 +209,17 @@ jobs:
 
       - name: Bundle Linux x64
         run: |
-          TAG=$(curl -sL https://api.github.com/repos/VSCodium/vscodium/releases/latest | python3 -c "import json,sys; print(json.load(sys.stdin)['tag_name'])")
+          set -euxo pipefail
+          TAG=$(curl -sL https://api.github.com/repos/VSCodium/vscodium/releases/latest | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['tag_name'])")
           echo "VSCodium tag: $TAG"
           URL="https://github.com/VSCodium/vscodium/releases/download/$TAG/VSCodium-linux-x64-$TAG.tar.gz"
-          curl -sL "$URL" -o vscodium-linux.tar.gz
+          echo "Downloading $URL"
+          curl -fL "$URL" -o vscodium-linux.tar.gz
+          ls -lh vscodium-linux.tar.gz
           tar -xzf vscodium-linux.tar.gz
           DIR=$(find . -maxdepth 1 -type d -name 'VSCodium-linux-*' | head -1)
+          echo "Extracted dir: $DIR"
+          test -n "$DIR"
           cp .release/product.json "$DIR/resources/app/product.json"
           mkdir -p "$DIR/resources/app/extensions/trinno-research"
           unzip -qo .release/assets/trinno-research.vsix -d "$DIR/resources/app/extensions/trinno-research/" 2>/dev/null || true
