@@ -293,12 +293,18 @@ jobs:
           node build/npm/postinstall.ts
 
       - name: Compile
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run gulp core-ci
 
       - name: Package copilot extension
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run gulp compile-copilot-extension-build
 
       - name: Package (${{ matrix.name }})
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run gulp vscode-${{ matrix.platform }}-${{ matrix.arch }}-min-ci
 
       - name: Create archive
