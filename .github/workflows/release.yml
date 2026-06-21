@@ -290,13 +290,6 @@ jobs:
           cp .release/assets/tinymist-universal.vsix "$WIN_DIR/resources/app/extensions/" 2>/dev/null || true
           cd "$WIN_DIR" && zip -qr "../.release_assets/tride-win32-x64.zip" . && cd ..
           ls -lh .release_assets/tride-win32-x64.zip
-          test -f "$DIR/resources/app/product.json"
-          cp .release/product.json "$DIR/resources/app/product.json"
-          mkdir -p "$DIR/resources/app/extensions"
-          cp .release/assets/trinno-research.vsix "$DIR/resources/app/extensions/" 2>/dev/null || true
-          cp .release/assets/tinymist-universal.vsix "$DIR/resources/app/extensions/" 2>/dev/null || true
-          zip -qr .release_assets/tride-win32-x64.zip "$DIR"
-          ls -lh .release_assets/tride-win32-x64.zip
 
       - name: Upload platform assets to release
         uses: softprops/action-gh-release@v2
