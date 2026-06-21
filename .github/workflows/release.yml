@@ -178,7 +178,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload artifacts for bundle job
+      - name: Upload artifacts for build jobs
         uses: actions/upload-artifact@v4
         with:
           name: tride-release-artifacts
@@ -186,120 +186,107 @@ jobs:
             .release/assets/
             .release/product.json
             .release/package.json
+            build/extensions/*.vsix
+            build/extensions/
           if-no-files-found: error
 
-  bundle-platforms:
+  build-platforms:
     needs: release
-    runs-on: ubuntu-22.04
-    timeout-minutes: 20
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-x64
+            os: ubuntu-latest
+            platform: linux
+            arch: x64
+            artifact: tride-linux-x64.tar.gz
+            pack: tar -czf
+            pack_extras: ""
+            sysdeps: sudo apt-get update && sudo apt-get install -y libgtk-3-dev libsecret-1-dev libxss-dev libasound2-dev libxkbfile-dev
+
+          - name: darwin-x64
+            os: macos-13
+            platform: darwin
+            arch: x64
+            artifact: tride-darwin-x64.zip
+            pack: zip -qr
+            pack_extras: ""
+            sysdeps: ""
+
+          - name: darwin-arm64
+            os: macos-14
+            platform: darwin
+            arch: arm64
+            artifact: tride-darwin-arm64.zip
+            pack: zip -qr
+            pack_extras: ""
+            sysdeps: ""
+
+          - name: win32-x64
+            os: windows-latest
+            platform: win32
+            arch: x64
+            artifact: tride-win32-x64.zip
+            pack: 7z a -tzip
+            pack_extras: ""
+            sysdeps: ""
+
+    runs-on: ${{ matrix.os }}
     env:
       VERSION: ${{ github.event.inputs.version || github.ref_name }}
       TAG_NAME: v${{ github.event.inputs.version || github.ref_name }}
+
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.x'
+          cache: 'npm'
+
+      - name: Install system dependencies
+        if: matrix.sysdeps != ''
+        run: ${{ matrix.sysdeps }}
+
       - name: Download release artifacts
         uses: actions/download-artifact@v4
         with:
           name: tride-release-artifacts
-          path: .release/
+          path: .release-artifacts/
 
-      - name: Setup
+      - name: Apply Tride branding
+        run: |
+          cp .release-artifacts/product.json product.json
+          cp .release-artifacts/package.json package.json
+          mkdir -p build/extensions
+          cp .release-artifacts/build/extensions/*.vsix build/extensions/ 2>/dev/null || true
+          bash scripts/install-branding.sh || true
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Compile
+        run: npm run gulp core-ci
+
+      - name: Package (${{ matrix.name }})
+        run: npm run gulp vscode-${{ matrix.platform }}-${{ matrix.arch }}-min-ci
+
+      - name: Create archive
         run: |
           mkdir -p .release_assets
-          echo "VERSION=${VERSION#v}" > .release/.version
+          cd "$GITHUB_WORKSPACE/.."
+          ${{ matrix.pack }} "$GITHUB_WORKSPACE/.release_assets/${{ matrix.artifact }}" VSCode-${{ matrix.platform }}-${{ matrix.arch }}/
 
-      - name: Bundle Linux x64
-        run: |
-          set -euxo pipefail
-          TAG=$(curl -sL https://api.github.com/repos/VSCodium/vscodium/releases/latest | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['tag_name'])")
-          echo "VSCodium tag: $TAG"
-          URL="https://github.com/VSCodium/vscodium/releases/download/$TAG/VSCodium-linux-x64-$TAG.tar.gz"
-          echo "Downloading $URL"
-          curl -fL "$URL" -o vscodium-linux.tar.gz
-          tar -xzf vscodium-linux.tar.gz
-          # VSCodium linux tarball is flat (no top-level dir)
-          mkdir -p tride-linux-x64
-          find . -maxdepth 1 -not -name '.' -not -name '.release' -not -name '.release*' -not -name '.release_assets' -not -name 'tride-linux-x64' -not -name 'vscodium-linux.tar.gz' -exec mv {} tride-linux-x64/ \;
-          test -f tride-linux-x64/resources/app/product.json
-          cp .release/product.json tride-linux-x64/resources/app/product.json
-          mkdir -p tride-linux-x64/resources/app/extensions
-          cp .release/assets/trinno-research.vsix tride-linux-x64/resources/app/extensions/ 2>/dev/null || true
-          cp .release/assets/tinymist-universal.vsix tride-linux-x64/resources/app/extensions/ 2>/dev/null || true
-          tar -czf .release_assets/tride-linux-x64.tar.gz tride-linux-x64/
-          ls -lh .release_assets/tride-linux-x64.tar.gz
-
-      - name: Bundle macOS x64
-        run: |
-          set -euxo pipefail
-          TAG=$(curl -sL https://api.github.com/repos/VSCodium/vscodium/releases/latest | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['tag_name'])")
-          URL="https://github.com/VSCodium/vscodium/releases/download/$TAG/VSCodium-darwin-x64-$TAG.zip"
-          curl -fL "$URL" -o vscodium-darwin-x64.zip
-          unzip -q vscodium-darwin-x64.zip
-          echo "=== Contents ===" && ls -la
-          APP_DIR=$(find . -maxdepth 2 -name '*.app' -type d | head -1 || ls -d VSCodium.app 2>/dev/null || echo "")
-          test -n "$APP_DIR"
-          cp .release/product.json "$APP_DIR/Contents/Resources/app/product.json"
-          mkdir -p "$APP_DIR/Contents/Resources/app/extensions"
-          cp .release/assets/trinno-research.vsix "$APP_DIR/Contents/Resources/app/extensions/" 2>/dev/null || true
-          cp .release/assets/tinymist-universal.vsix "$APP_DIR/Contents/Resources/app/extensions/" 2>/dev/null || true
-          zip -qr .release_assets/tride-darwin-x64.zip "$APP_DIR"
-          ls -lh .release_assets/tride-darwin-x64.zip
-
-      - name: Bundle macOS arm64
-        run: |
-          set -euxo pipefail
-          TAG=$(curl -sL https://api.github.com/repos/VSCodium/vscodium/releases/latest | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['tag_name'])")
-          URL="https://github.com/VSCodium/vscodium/releases/download/$TAG/VSCodium-darwin-arm64-$TAG.zip"
-          curl -fL "$URL" -o vscodium-darwin-arm64.zip
-          mkdir -p codium-arm64
-          unzip -q vscodium-darwin-arm64.zip -d codium-arm64
-          echo "=== Contents ===" && ls -la codium-arm64/
-          APP_DIR=$(find codium-arm64 -maxdepth 2 -name '*.app' -type d | head -1)
-          test -n "$APP_DIR"
-          mv "$APP_DIR" codium-arm64/Tride-arm64.app
-          APP_DIR="codium-arm64/Tride-arm64.app"
-          cp .release/product.json "$APP_DIR/Contents/Resources/app/product.json"
-          mkdir -p "$APP_DIR/Contents/Resources/app/extensions"
-          cp .release/assets/trinno-research.vsix "$APP_DIR/Contents/Resources/app/extensions/" 2>/dev/null || true
-          cp .release/assets/tinymist-universal.vsix "$APP_DIR/Contents/Resources/app/extensions/" 2>/dev/null || true
-          cd codium-arm64 && zip -qr "$GITHUB_WORKSPACE/.release_assets/tride-darwin-arm64.zip" "$(basename "$APP_DIR")" && cd "$GITHUB_WORKSPACE"
-          ls -lh .release_assets/tride-darwin-arm64.zip
-
-      - name: Bundle Windows x64
-        run: |
-          set -euxo pipefail
-          TAG=$(curl -sL https://api.github.com/repos/VSCodium/vscodium/releases/latest | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['tag_name'])")
-          URL="https://github.com/VSCodium/vscodium/releases/download/$TAG/VSCodium-win32-x64-$TAG.zip"
-          curl -fL "$URL" -o vscodium-win32-x64.zip
-          unzip -q vscodium-win32-x64.zip
-          # Check if zip has a top-level directory or is flat
-          if [ -d "VSCodium-win32-x64" ]; then
-            WIN_DIR="VSCodium-win32-x64"
-          elif [ -d "VSCode-win32-x64" ]; then
-            WIN_DIR="VSCode-win32-x64"
-          else
-            # Flat structure; wrap it
-            mkdir -p tride-win32-x64
-            find . -maxdepth 1 -not -name '.' -not -name '.release' -not -name '.release*' -not -name '.release_assets' -not -name 'tride-win32-x64' -not -name 'vscodium-win32-x64.zip' -exec mv {} tride-win32-x64/ \;
-            WIN_DIR="tride-win32-x64"
-          fi
-          echo "Win dir: $WIN_DIR"
-          test -f "$WIN_DIR/resources/app/product.json"
-          cp .release/product.json "$WIN_DIR/resources/app/product.json"
-          mkdir -p "$WIN_DIR/resources/app/extensions"
-          cp .release/assets/trinno-research.vsix "$WIN_DIR/resources/app/extensions/" 2>/dev/null || true
-          cp .release/assets/tinymist-universal.vsix "$WIN_DIR/resources/app/extensions/" 2>/dev/null || true
-          cd "$WIN_DIR" && zip -qr "../.release_assets/tride-win32-x64.zip" . && cd ..
-          ls -lh .release_assets/tride-win32-x64.zip
-
-      - name: Upload platform assets to release
+      - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.TAG_NAME }}
-          files: |
-            .release_assets/tride-linux-x64.tar.gz
-            .release_assets/tride-darwin-x64.zip
-            .release_assets/tride-darwin-arm64.zip
-            .release_assets/tride-win32-x64.zip
+          files: .release_assets/${{ matrix.artifact }}
           fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
