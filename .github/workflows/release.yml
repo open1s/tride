@@ -93,7 +93,7 @@ jobs:
           mv package.json.tmp package.json
 
           if [ -f product.json ]; then
-            (jq --arg v "${VERSION}" 'has("version") | if . then .version = $v else . end' product.json > product.json.tmp) && mv product.json.tmp product.json || true
+            jq --arg v "${VERSION}" '.version = $v' product.json > product.json.tmp && mv product.json.tmp product.json
           fi
 
       # ----- collect assets -----
@@ -267,6 +267,8 @@ jobs:
           mkdir -p build/extensions
           cp .release-artifacts/build/extensions/*.vsix build/extensions/ 2>/dev/null || true
           bash scripts/install-branding.sh || true
+
+          python3 -c "import json; p=json.load(open('product.json')); assert isinstance(p, dict) and 'builtInExtensions' in p; print('product.json validated OK')"
 
       - name: Install dependencies
         env:
