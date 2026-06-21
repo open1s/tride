@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Release Trinno Research IDE v1.0.0 via GitHub Actions.
+# Release Tride v1.0.0 via GitHub Actions.
 #
 # Usage:
 #   bash scripts/release-1.0.0.sh                  # default: v1.0.0, draft=false
@@ -37,7 +37,7 @@ if ! command -v gh >/dev/null 2>&1; then
   exit 1
 fi
 
-echo "=== Trinno Research IDE Release ==="
+echo "=== Tride Release ==="
 echo "  Version:    ${VERSION}"
 echo "  Draft:      ${DRAFT}"
 echo "  Prerelease: ${PRERELEASE}"
@@ -47,7 +47,7 @@ echo ""
 if [ "${MODE}" = "tag" ]; then
   TAG="v${VERSION}"
   echo "Pushing tag ${TAG} (auto-triggers release workflow)..."
-  git tag -a "${TAG}" -m "Trinno Research IDE ${VERSION}"
+  git tag -a "${TAG}" -m "Tride ${VERSION}"
   git push origin "${TAG}"
 else
   echo "Triggering release workflow via gh..."

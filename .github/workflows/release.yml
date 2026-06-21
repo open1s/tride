@@ -1,19 +1,3 @@
-# Trinno IDE Release
-#
-# Trigger a tagged release on GitHub.
-#
-# Examples:
-#   gh workflow run release.yml -f version=1.0.0
-#   gh workflow run release.yml -f version=1.0.0 -f draft=false
-#   git tag v1.0.0 && git push origin v1.0.0   # auto-triggered on tag push
-#
-# What this does:
-#   1. Compiles the trinno-research extension from a sibling checkout
-#   2. Runs prepare-trinno.sh to build branding + extension VSIX
-#   3. Optionally downloads Tinymist Typst extension
-#   4. Bumps package.json / product.json to <version>
-#   5. Creates a GitHub Release tagged v<version> with the assets attached
-
 name: Release
 
 on:
@@ -129,15 +113,15 @@ jobs:
         run: |
           PREV_TAG=$(git describe --tags --abbrev=0 "${TAG_NAME}^" 2>/dev/null || echo "")
           {
-            echo "## Trinno Research IDE ${VERSION#v}"
+            echo "## Tride ${VERSION#v}"
             echo ""
-            echo "Pre-built distributions and bundled extensions for the Trinno Research IDE."
+            echo "Pre-built distributions and bundled extensions for the Tride IDE."
             echo ""
             echo "### Bundled extensions"
             echo ""
-            echo "- **open1s.trinno-research** \u2014 TRIZ research assistant (chat panel, contradiction analysis, paper download, BOS agent)"
-            echo "- **myriad-dreamin.tinymist** \u2014 Typst language service (preview, formatting, LSP)"
-            echo "- **vscode.mermaid-markdown-features** \u2014 Mermaid diagram rendering in markdown preview"
+            printf '%s\n' "- **open1s.trinno-research** $(printf '\xe2\x80\x94') TRIZ research assistant (chat panel, contradiction analysis, paper download, BOS agent)"
+            printf '%s\n' "- **myriad-dreamin.tinymist** $(printf '\xe2\x80\x94') Typst language service (preview, formatting, LSP)"
+            printf '%s\n' "- **vscode.mermaid-markdown-features** $(printf '\xe2\x80\x94') Mermaid diagram rendering in markdown preview"
             echo ""
             echo "### Assets"
             echo ""
@@ -145,7 +129,10 @@ jobs:
             echo "|------|-------------|"
             echo "| \`trinno-research.vsix\` | Trinno Research extension VSIX |"
             echo "| \`tinymist-universal.vsix\` | Tinymist Typst extension VSIX |"
-            echo "| \`trinno-icon-256.png\` | Brand icon (256x256) |"
+            printf '%s\n' "| \`trinno-icon-256.png\` | Brand icon (256x256) |"
+            printf '%s\n' "| \`tride-linux-x64.tar.gz\` | Tride IDE for Linux x64 (unsigned) |"
+            printf '%s\n' "| \`tride-darwin-universal.zip\` | Tride IDE for macOS universal (unsigned) |"
+            printf '%s\n' "| \`tride-win32-x64.zip\` | Tride IDE for Windows x64 (unsigned) |"
             echo ""
             if [ -n "${PREV_TAG}" ]; then
               echo "### Changelog"
@@ -167,7 +154,7 @@ jobs:
             echo "Creating tag ${TAG_NAME}"
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
-            git tag -a "${TAG_NAME}" -m "Trinno Research IDE ${VERSION#v}"
+            git tag -a "${TAG_NAME}" -m "Tride ${VERSION#v}"
             git push origin "${TAG_NAME}" || echo "Tag push failed (may already exist)"
           else
             echo "Tag ${TAG_NAME} already exists"
@@ -178,7 +165,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.TAG_NAME }}
-          name: 'Trinno Research IDE ${{ env.VERSION }}'
+          name: 'Tride ${{ env.VERSION }}'
           body_path: .release/NOTES.md
           draft: ${{ inputs.draft || false }}
           prerelease: ${{ inputs.prerelease || false }}
