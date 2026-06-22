@@ -1,78 +1,117 @@
-# Visual Studio Code - Open Source ("Code - OSS")
-[![Feature Requests](https://img.shields.io/github/issues/microsoft/vscode/feature-request.svg)](https://github.com/microsoft/vscode/issues?q=is%3Aopen+is%3Aissue+label%3Afeature-request+sort%3Areactions-%2B1-desc)
-[![Bugs](https://img.shields.io/github/issues/microsoft/vscode/bug.svg)](https://github.com/microsoft/vscode/issues?utf8=✓&q=is%3Aissue+is%3Aopen+label%3Abug)
-[![Gitter](https://img.shields.io/badge/chat-on%20gitter-yellow.svg)](https://gitter.im/Microsoft/vscode)
+# Trinno Research IDE
 
-## The Repository
+> A research-oriented IDE built on the [Visual Studio Code - Open Source](https://github.com/microsoft/vscode) ("Code - OSS") base, with the **Trinno Research** extension bundled for TRIZ-driven innovation workflows.
 
-This repository ("`Code - OSS`") is where we (Microsoft) develop the [Visual Studio Code](https://code.visualstudio.com) product together with the community. Not only do we work on code and issues here, but we also publish our [roadmap](https://github.com/microsoft/vscode/wiki/Roadmap), [monthly iteration plans](https://github.com/microsoft/vscode/wiki/Iteration-Plans), and our [endgame plans](https://github.com/microsoft/vscode/wiki/Running-the-Endgame). This source code is available to everyone under the standard [MIT license](https://github.com/microsoft/vscode/blob/main/LICENSE.txt).
+[![Trinno Research](https://img.shields.io/badge/Trinno-Research%20IDE-0F4C81)](https://github.com/open1s/tride)
+[![Built on Code - OSS](https://img.shields.io/badge/base-Code--OSS-blue)](https://github.com/microsoft/vscode)
+[![MIT License](https://img.shields.io/badge/license-MIT-green)](LICENSE.txt)
 
-## Visual Studio Code
+---
 
-<p align="center">
-  <img alt="VS Code in action" src="https://github.com/user-attachments/assets/56af271c-949d-454c-a3ea-16188c063414">
-</p>
+## What is this
 
-[Visual Studio Code](https://code.visualstudio.com) is a distribution of the `Code - OSS` repository with Microsoft-specific customizations released under a traditional [Microsoft product license](https://code.visualstudio.com/License/).
+`open1s/tride` is a maintained fork of Microsoft's `vscode` (Code - OSS) that ships as **Trinno Research IDE**. The product is rebranded, the binaries are signed under the **Trinno** name, and the built-in TRIZ research assistant extension ([`open1s.trinno-research`](https://github.com/open1s/trinno)) is bundled at build time.
 
-[Visual Studio Code](https://code.visualstudio.com) combines the simplicity of a code editor with what developers need for their core edit-build-debug cycle. It provides comprehensive code editing, navigation, and understanding support along with lightweight debugging, a rich extensibility model, and lightweight integration with existing tools.
-
-Visual Studio Code is updated monthly with new features and bug fixes. You can download it for Windows, macOS, and Linux on [Visual Studio Code's website](https://code.visualstudio.com/Download). To get the latest releases every day, install the [Insiders build](https://code.visualstudio.com/insiders).
-
-## Contributing
-
-There are many ways in which you can participate in this project, for example:
-
-* [Submit bugs and feature requests](https://github.com/microsoft/vscode/issues), and help us verify as they are checked in
-* Review [source code changes](https://github.com/microsoft/vscode/pulls)
-* Review the [documentation](https://github.com/microsoft/vscode-docs) and make pull requests for anything from typos to new content.
-
-If you are interested in fixing issues and contributing directly to the code base,
-please see the document [How to Contribute](https://github.com/microsoft/vscode/wiki/How-to-Contribute), which covers the following:
-
-* [How to build and run from source](https://github.com/microsoft/vscode/wiki/How-to-Contribute)
-* [The development workflow, including debugging and running tests](https://github.com/microsoft/vscode/wiki/How-to-Contribute#debugging)
-* [Coding guidelines](https://github.com/microsoft/vscode/wiki/Coding-Guidelines)
-* [Submitting pull requests](https://github.com/microsoft/vscode/wiki/How-to-Contribute#pull-requests)
-* [Finding an issue to work on](https://github.com/microsoft/vscode/wiki/How-to-Contribute#where-to-contribute)
-* [Contributing to translations](https://aka.ms/vscodeloc)
-
-## Feedback
-
-* Ask a question on [Stack Overflow](https://stackoverflow.com/questions/tagged/vscode)
-* [Request a new feature](CONTRIBUTING.md)
-* Upvote [popular feature requests](https://github.com/microsoft/vscode/issues?q=is%3Aopen+is%3Aissue+label%3Afeature-request+sort%3Areactions-%2B1-desc)
-* [File an issue](https://github.com/microsoft/vscode/issues)
-* Connect with the extension author community on [GitHub Discussions](https://github.com/microsoft/vscode-discussions/discussions) or [Slack](https://aka.ms/vscode-dev-community)
-* Follow [@code](https://x.com/code) and let us know what you think!
-
-See our [wiki](https://github.com/microsoft/vscode/wiki/Feedback-Channels) for a description of each of these channels and information on some other available community-driven channels.
-
-## Related Projects
-
-Many of the core components and extensions to VS Code live in their own repositories on GitHub. For example, the [node debug adapter](https://github.com/microsoft/vscode-node-debug) and the [mono debug adapter](https://github.com/microsoft/vscode-mono-debug) repositories are separate from each other. For a complete list, please visit the [Related Projects](https://github.com/microsoft/vscode/wiki/Related-Projects) page on our [wiki](https://github.com/microsoft/vscode/wiki).
+Everything else stays stock Code - OSS: the editor, workbench, extensions API, settings, keybindings, and core engineering are unchanged from upstream. We do not add private telemetry, authentication handshakes, or product-specific code beyond the rebranding layer and the bundled research extension.
 
 ## Bundled Extensions
 
-VS Code includes a set of built-in extensions located in the [extensions](extensions) folder, including grammars and snippets for many languages. Extensions that provide rich language support (inline suggestions, Go to Definition) for a language have the suffix `language-features`. For example, the `json` extension provides coloring for `JSON` and the `json-language-features` extension provides rich language support for `JSON`.
+The release ships the following built-in extensions in every platform build:
 
-## Development Container
+| Extension | Purpose |
+|-----------|---------|
+| `open1s.trinno-research` | TRIZ research assistant: chat panel, contradiction analysis, paper download, BOS agent (`tride-darwin-arm64.zip`, `tride-linux-x64.tar.gz`, `tride-win32-x64.zip`) |
+| `myriad-dreamin.tinymist` | Typst language service — preview, formatting, LSP |
+| `vscode.mermaid-markdown-features` | Mermaid diagram rendering in the markdown preview |
 
-This repository includes a Visual Studio Code Dev Containers / GitHub Codespaces development container.
+Plus the full set of upstream Code - OSS built-in extensions (git, languages, themes, etc.).
 
-* For [Dev Containers](https://aka.ms/vscode-remote/download/containers), use the **Dev Containers: Clone Repository in Container Volume...** command which creates a Docker volume for better disk I/O on macOS and Windows.
-  * If you already have VS Code and Docker installed, you can also click [here](https://vscode.dev/redirect?url=vscode://ms-vscode-remote.remote-containers/cloneInVolume?url=https://github.com/microsoft/vscode) to get started. This will cause VS Code to automatically install the Dev Containers extension if needed, clone the source code into a container volume, and spin up a dev container for use.
+## Releases
 
-* For Codespaces, install the [GitHub Codespaces](https://marketplace.visualstudio.com/items?itemName=GitHub.codespaces) extension in VS Code, and use the **Codespaces: Create New Codespace** command.
+Pre-built binaries are published as GitHub Releases:
 
-Docker / the Codespace should have at least **4 cores and 6 GB of RAM (8 GB recommended)** to run a full build. See the [development container README](.devcontainer/README.md) for more information.
+| Platform | Asset |
+|----------|-------|
+| Linux x64 | `tride-linux-x64.tar.gz` |
+| macOS (Apple Silicon) | `tride-darwin-arm64.zip` |
+| Windows x64 | `tride-win32-x64.zip` |
+| macOS (Intel) | _not currently built — `macos-13` runner capacity is limited_ |
 
-## Code of Conduct
+Download the latest release from the [Releases](../../releases) tab.
 
-This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/). For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
+To get insider-style pre-releases every build, see [`.github/workflows/release.yml`](.github/workflows/release.yml).
+
+## Building from source
+
+Tride follows the upstream build instructions. The only prerequisites are the usual VS Code ones ([Node.js 24.x](https://nodejs.org/) matches `.nvmrc`, C/C++ toolchain on Linux/Windows, Xcode CLT on macOS).
+
+```bash
+git clone https://github.com/open1s/tride.git
+cd tride
+
+# 1. Bootstrap (downloads Node toolchain and a few support modules)
+npm ci
+
+# 2. Build all of the built-in extensions (including trinno-research if sourced locally)
+npm run gulp compile-extensions-build
+
+# 3. Compile the main IDE
+npm run gulp core-ci
+
+# 4. Package for your current platform/arch
+npm run gulp vscode-<platform>-<arch>-min-ci
+# e.g. npm run gulp vscode-linux-x64-min-ci
+```
+
+The packaged IDE lands in `../VSCode-<platform>-<arch>/` (a sibling of the repo root). On Windows the same command produces a `.zip` via 7-Zip; on Linux a `.tar.gz`; on macOS a `.zip`.
+
+### Adding the Trinno Research extension locally
+
+To develop against the Trinno Research extension from its own checkout:
+
+```bash
+export TRINNO_PATH=/path/to/trinno   # ~/.agents-style locations work too
+npm run compile-extension-media-build
+npm run watch   # auto-recompile on file changes
+```
+
+The repo's [`scripts/setup-trinno-dev.sh`](scripts/setup-trinno-dev.sh) automates this: it verifies the sibling `trinno` repo and registers its compiled output as a local override in `.vscode/settings.json`.
+
+## Repository layout
+
+```
+tride/
+├── build/
+│   ├── azure-pipelines/   # Upstream Azure pipeline definitions (kept for reference)
+│   ├── branding/          # Trinno SVG/PNG, app icons, splash screens
+│   ├── extensions/        # Trinno engineering scripts
+│   ├── gulpfile.*.ts      # Build orchestration
+│   ├── .moduleignore      # node_modules cleanup rules for packaged IDE
+│   └── lib/copilot.ts     # Trinno-specific build steps (ripgrep shim, etc.)
+├── extensions/            # All built-in extension sources
+├── scripts/
+│   ├── install-branding.sh    # Apply Trinno branding to resources/
+│   ├── prepare-trinno.sh      # Build pipeline pre-bundle step
+│   ├── package-trinno.sh      # Pack the trinno-research VSIX
+│   └── ...
+├── .github/workflows/
+│   └── release.yml        # Trinno Research IDE release pipeline (GitHub Actions)
+├── product.json           # Trinno product metadata (applicationName, icons, etc.)
+└── package.json
+```
+
+## Trademark notice
+
+**Visual Studio Code**, **VS Code**, and **Code - OSS** are trademarks of Microsoft Corporation. Trinno Research IDE is an independent fork and is not affiliated with, endorsed by, or sponsored by Microsoft. All upstream Code - OSS code remains under the [MIT License](https://github.com/microsoft/vscode/blob/main/LICENSE.txt).
 
 ## License
 
-Copyright (c) Microsoft Corporation. All rights reserved.
+Copyright (c) The Trinno project authors. All rights reserved.
 
-Licensed under the [MIT](LICENSE.txt) license.
+Licensed under the [MIT](LICENSE.txt) license. Source code in this repository is derivative of Microsoft's [vscode](https://github.com/microsoft/vscode) and inherits its license.
+
+## Related projects
+
+- [microsoft/vscode](https://github.com/microsoft/vscode) — upstream Code - OSS
+- [open1s/trinno](https://github.com/open1s/trinno) — `trinno-research` extension (the bundled TRIZ research assistant)
+- [myriad-dreamin/tinymist](https://github.com/myriad-dreamin/tinymist) — Typst language service
