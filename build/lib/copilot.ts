@@ -130,9 +130,10 @@ export function prepareBuiltInCopilotRipgrepShim(platform: string, arch: string,
 	const extensionNodeModules = path.join(builtInCopilotExtensionDir, 'node_modules');
 	const copilotBase = path.join(extensionNodeModules, '@github', 'copilot');
 	const copilotSdkBase = path.join(copilotBase, 'sdk');
-	if (!fs.existsSync(copilotSdkBase)) {
-		throw new Error(`[prepareBuiltInCopilotRipgrepShim] Copilot SDK directory not found at ${copilotSdkBase}`);
-	}
+	// .moduleignore strips @github/copilot/sdk/index.js, which can leave the
+	// sdk/ directory empty / non-existent on disk even though copilot is bundled.
+	// Create it on demand so we can write the ripgrep shim into it.
+	fs.mkdirSync(copilotSdkBase, { recursive: true });
 	pruneNonTargetCopilotSdkPrebuilds(platformArch, copilotSdkBase);
 
 	const ripgrepSource = path.join(appNodeModulesDir, '@vscode', 'ripgrep-universal', 'bin', platformArch);
