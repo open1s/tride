@@ -288,9 +288,10 @@ jobs:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
           NODE_OPTIONS: --max-old-space-size=8192
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          npm_command: "ci --ignore-scripts"
         run: |
           npm ci --ignore-scripts
-          npm_command="ci --ignore-scripts" node build/npm/postinstall.ts
+          node build/npm/postinstall.ts
 
       - name: Compile
         env:
