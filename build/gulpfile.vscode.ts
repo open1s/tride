@@ -559,7 +559,20 @@ function patchWin32DependenciesTask(destinationFolderName: string) {
 	return async () => {
 		const versionedResourcesFolder = util.getVersionedResourcesFolder('win32', commit!);
 		const deps = (await Promise.all([
-			glob('**/*.node', { cwd, ignore: 'extensions/node_modules/@parcel/watcher/**' }),
+			glob('**/*.node', {
+				cwd,
+				ignore: [
+					'extensions/node_modules/@parcel/watcher/**',
+					// rcedit fails on non-PE files (linux/darwin/freebsd/openbsd/sunos/macos alpine natives)
+					'**/linux*/**',
+					'**/darwin*/**',
+					'**/freebsd*/**',
+					'**/openbsd*/**',
+					'**/sunos*/**',
+					'**/macos*/**',
+					'**/alpine*/**',
+				],
+			}),
 			glob('**/rg.exe', { cwd }),
 			glob('**/*explorer_command*.dll', { cwd }),
 		])).flatMap(o => o);
@@ -572,19 +585,24 @@ function patchWin32DependenciesTask(destinationFolderName: string) {
 			const fullPath = path.join(cwd, dep);
 
 			await stripAuthenticodeSignature(fullPath);
-			await rcedit(fullPath, {
-				'file-version': baseVersion,
-				'version-string': {
-					'CompanyName': 'Microsoft Corporation',
-					'FileDescription': product.nameLong,
-					'FileVersion': packageJson.version,
-					'InternalName': basename,
-					'LegalCopyright': 'Copyright (C) 2026 Microsoft. All rights reserved',
-					'OriginalFilename': basename,
-					'ProductName': product.nameLong,
-					'ProductVersion': packageJson.version,
-				}
-			});
+			// catch: rcedit fails on non-PE files. Skip instead of breaking the whole packaging task.
+			try {
+				await rcedit(fullPath, {
+					'file-version': baseVersion,
+					'version-string': {
+						'CompanyName': 'Microsoft Corporation',
+						'FileDescription': product.nameLong,
+						'FileVersion': packageJson.version,
+						'InternalName': basename,
+						'LegalCopyright': 'Copyright (C) 2026 Microsoft. All rights reserved',
+						'OriginalFilename': basename,
+						'ProductName': product.nameLong,
+						'ProductVersion': packageJson.version,
+					}
+				});
+			} catch (err) {
+				console.warn(`patchWin32Dependencies: skipped ${dep} (${(err as Error).message?.split('\n')[0] ?? 'rcedit failed'})`);
+			}
 		});
 
 		await Promise.all(patchPromises);
