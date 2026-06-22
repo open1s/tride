@@ -292,9 +292,6 @@ jobs:
         run: |
           npm ci --ignore-scripts
           node build/npm/postinstall.ts
-          echo "=== Debug: check copilot node_modules ==="
-          ls -la extensions/copilot/node_modules/@github/ 2>&1 || echo "no @github dir"
-          ls -la extensions/copilot/node_modules/@github/copilot/ 2>&1 || echo "no @github/copilot dir"
 
       - name: Compile
         env:
