@@ -309,6 +309,7 @@ jobs:
         run: npm run gulp vscode-${{ matrix.platform }}-${{ matrix.arch }}-min-ci
 
       - name: Create archive
+        shell: bash
         run: |
           mkdir -p .release_assets
           cd "$GITHUB_WORKSPACE/.."
